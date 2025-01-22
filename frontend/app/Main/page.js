@@ -1,43 +1,25 @@
 'use client';
 import { useState, useEffect } from "react";
-import Image from "next/image";
-import ActivityChart from "../components/ActivityChart";
+import { Line, Bar, ResponsiveContainer, LineChart, CartesianGrid, YAxis, XAxis, Legend,Tooltip } from 'recharts';
+import Navbar from "../components/Navbar";
+import { useDarkMode } from "../context/DarkModeContext";
 import Badge from "../components/Badge";
+import Footer from "../components/Footer";
+import ExerciseAnalytics from "../components/ExerciseAnalytics";
 
 export default function Home() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [workoutData, setWorkoutData] = useState(null);
+  const { darkMode } = useDarkMode();
+  const [workoutData, setWorkoutData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchWorkoutData = async () => {
-      const userId = "678a165d5ea4e10812a9e603"; // Static userId for demonstration
       try {
-        // Simulate fetching data
-        const data = {
-          userId: "678a165d5ea4e10812a9e603",
-          date: "2024-01-17T00:00:00.000Z",
-          steps: 132,
-          exercises: [
-            {
-              type: "chest",
-              duration: 30,
-              exercise_name: "Push-ups",
-              calories: 100,
-              note: "3 sets of 15 reps",
-              _id: "678a171a5ea4e10812a9e60a",
-            },
-            {
-              type: "abs",
-              duration: 20,
-              exercise_name: "Crunches",
-              calories: 50,
-              note: "4 sets of 20 reps",
-              _id: "678a171a5ea4e10812a9e60b",
-            },
-          ],
-        };
+        const userId = localStorage.getItem("userId");
+        const response = await fetch(`https://irix.onrender.com/api/workout/${userId}`);
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data = await response.json();
         setWorkoutData(data);
       } catch (err) {
         setError(err.message);
@@ -55,169 +37,127 @@ export default function Home() {
     if (steps >= 5000) return "beginner";
     return null;
   };
-
-  const toggleDarkMode = () => {
-    setDarkMode((prevMode) => !prevMode);
+  const getLatestWorkout = () => {
+    if (!workoutData.length) return null;
+    return workoutData.reduce((latest, current) => {
+      return new Date(current.date) > new Date(latest.date) ? current : latest;
+    });
   };
 
   const getTotalCalories = (data) => {
     if (!data?.exercises) return 0;
-    return data.exercises.reduce((total, exercise) => total + exercise.calories, 0);
+    return data.exercises.reduce((total, exercise) => total + (exercise.calories || 0), 0);
   };
 
   const getTotalDuration = (data) => {
     if (!data?.exercises) return 0;
-    return data.exercises.reduce((total, exercise) => total + exercise.duration, 0);
+    return data.exercises.reduce((total, exercise) => total + (exercise.duration || 0), 0);
   };
 
+  const prepareChartData = () => {
+    return workoutData
+      .sort((a, b) => new Date(a.date) - new Date(b.date))
+      .map(workout => ({
+        date: new Date(workout.date).toLocaleDateString(),
+        steps: workout.steps,
+        calories: getTotalCalories(workout),
+        duration: getTotalDuration(workout)
+      }));
+  };
+
+  const latestWorkout = getLatestWorkout();
+  const chartData = prepareChartData();
+
   return (
-    <div
-      className={`min-h-screen ${
-        darkMode
-          ? "bg-gray-900 text-gray-100"
-          : "bg-gradient-to-br from-blue-50 to-blue-100"
-      }`}
-    >
-      <nav
-        className={`${
-          darkMode ? "bg-gray-800 text-gray-100" : "bg-white text-gray-800"
-        } shadow-sm p-4 flex justify-between items-center`}
-      >
-        <h1 className="text-2xl font-bold text-blue-600">FitTrack</h1>
-        <ul className="flex space-x-6">
-          <li>
-            <a
-              href="/profile"
-              className={`${
-                darkMode
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-blue-600"
-              } font-medium`}
-            >
-              Profile
-            </a>
-          </li>
-          <li>
-            <a
-              href="/food"
-              className={`${
-                darkMode
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-blue-600"
-              } font-medium`}
-            >
-              Food
-            </a>
-          </li>
-          <li>
-            <a
-              href="/BMI"
-              className={`${
-                darkMode
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-blue-600"
-              } font-medium`}
-            >
-              BMI Calculator
-            </a>
-          </li>
-          <li>
-            <a
-              href="/workout"
-              className={`${
-                darkMode
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-blue-600"
-              } font-medium`}
-            >
-              Workout
-            </a>
-          </li>
-          <li>
-            <a
-              href="/sleep"
-              className={`${
-                darkMode
-                  ? "text-gray-300 hover:text-white"
-                  : "text-gray-600 hover:text-blue-600"
-              } font-medium`}
-            >
-              Sleep
-            </a>
-          </li>
-        </ul>
-        <button
-          onClick={toggleDarkMode}
-          className={`ml-4 px-4 py-2 rounded-lg ${
-            darkMode
-              ? "bg-gray-700 text-gray-200 hover:bg-gray-600"
-              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-          } transition`}
-        >
-          {darkMode ? "Light Mode" : "Dark Mode"}
-        </button>
-      </nav>
-
+    <div className={`min-h-screen ${darkMode ? "bg-gray-900 text-gray-100" : "bg-gradient-to-br from-blue-50 to-blue-100"}`}>
+      <Navbar/>
       <main className="container mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } p-6 rounded-xl shadow-sm`}
-          >
-            <h2 className="font-semibold mb-4">Daily Goals</h2>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-blue-500">
-                {isLoading ? "Loading..." : workoutData?.steps || 0}
+        {error ? (
+          <div className="text-red-500 text-center p-4">Error: {error}</div>
+        ) : isLoading ? (
+          <div className="text-center p-4">Loading...</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className={`${darkMode ? "bg-gray-800" : "bg-white"} p-6 rounded-xl shadow-sm`}>
+                <h2 className="font-semibold mb-4">Daily Steps</h2>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-blue-500">
+                    {latestWorkout?.steps || 0}
+                  </div>
+                  <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    steps today
+                  </p>
+                </div>
+                {latestWorkout && getBadgeType(latestWorkout.steps) && (
+                  <div className="mt-4">
+                    <Badge type={getBadgeType(latestWorkout.steps)} count={latestWorkout.steps} />
+                  </div>
+                )}
               </div>
-              <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                steps today
-              </p>
-            </div>
-            {!isLoading && getBadgeType(workoutData?.steps || 0) && (
-              <div className="mt-4">
-                <Badge type={getBadgeType(workoutData?.steps || 0)} count={workoutData?.steps || 0} />
-              </div>
-            )}
-          </div>
 
-          <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } p-6 rounded-xl shadow-sm`}
-          >
-            <h2 className="font-semibold mb-4">Active Minutes</h2>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-green-500">
-                {isLoading ? "Loading..." : getTotalDuration(workoutData)}
+              <div className={`${darkMode ? "bg-gray-800" : "bg-white"} p-6 rounded-xl shadow-sm`}>
+                <h2 className="font-semibold mb-4">Active Minutes</h2>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-green-500">
+                    {getTotalDuration(latestWorkout)}
+                  </div>
+                  <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    minutes
+                  </p>
+                </div>
               </div>
-              <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                minutes
-              </p>
-            </div>
-          </div>
 
-          <div
-            className={`${
-              darkMode ? "bg-gray-800" : "bg-white"
-            } p-6 rounded-xl shadow-sm`}
-          >
-            <h2 className="font-semibold mb-4">Calories</h2>
-            <div className="flex items-center justify-between">
-              <div className="text-3xl font-bold text-orange-500">
-                {isLoading ? "Loading..." : getTotalCalories(workoutData)}
+              <div className={`${darkMode ? "bg-gray-800" : "bg-white"} p-6 rounded-xl shadow-sm`}>
+                <h2 className="font-semibold mb-4">Calories</h2>
+                <div className="flex items-center justify-between">
+                  <div className="text-3xl font-bold text-orange-500">
+                    {getTotalCalories(latestWorkout)}
+                  </div>
+                  <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
+                    kcal burned
+                  </p>
+                </div>
               </div>
-              <p className={`${darkMode ? "text-gray-400" : "text-gray-600"}`}>
-                kcal burned
-              </p>
             </div>
-          </div>
-        </div>
 
-        <div className="mt-8">
-          <ActivityChart />
-        </div>
+            <div className={`mt-8 ${darkMode ? "bg-gray-800" : "bg-white"} p-6 rounded-xl shadow-sm`}>
+              <h2 className="font-semibold mb-6">Activity Overview</h2>
+              <div className="h-96">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip contentStyle={{ backgroundColor: darkMode ? '#1f2937' : 'white' }} />
+                    <Legend />
+                    <Line 
+                      type="monotone" 
+                      dataKey="steps" 
+                      stroke="#3b82f6" 
+                      name="Steps"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="calories" 
+                      stroke="#f97316" 
+                      name="Calories"
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="duration" 
+                      stroke="#22c55e" 
+                      name="Duration (min)"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </>
+        )}
       </main>
+      <ExerciseAnalytics workoutData={workoutData} />
+      <Footer />
     </div>
   );
 }

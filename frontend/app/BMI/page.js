@@ -7,6 +7,9 @@ import {
   Tooltip,
   Legend
 } from 'chart.js'
+import Navbar from '../components/Navbar'
+import { useDarkMode } from '../context/DarkModeContext'
+import Footer from '../components/Footer'
 
 ChartJS.register(
   ArcElement,
@@ -14,7 +17,9 @@ ChartJS.register(
   Legend
 )
 
+
 const Page = () => {
+  const { darkMode } = useDarkMode();
   const [weight, setWeight] = useState('')
   const [height, setHeight] = useState('')
   const [bmi, setBmi] = useState('')
@@ -48,6 +53,8 @@ const Page = () => {
       setBmi(storedBMI)
     }
   }, [])
+
+
 
   const saveBMIToStorage = (bmiValue) => {
     localStorage.setItem('lastBMI', bmiValue)
@@ -110,15 +117,19 @@ const Page = () => {
       }
     : null
 
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 flex flex-col items-center justify-center p-6">
-      <div className="bg-white/90 backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-100">
+        <div className={`min-h-screen ${darkMode ? 'bg-gray-900 text-gray-100' : 'bg-gradient-to-br from-blue-50 to-blue-100'}`}>
+        <Navbar/>
+    <div className="min-h-screen flex flex-col items-center justify-center p-6">
+
+      <div className=" backdrop-blur-sm p-8 rounded-2xl shadow-2xl w-full max-w-4xl border border-gray-100">
         <h1 className="text-4xl font-bold mb-8 text-center bg-gradient-to-r from-blue-600 to-purple-600 text-transparent bg-clip-text">
           Body Composition Calculator
         </h1>
         
         {profileData && (
-          <div className="mb-6 p-4 bg-blue-50 rounded-xl">
+          <div className="mb-6 p-4 rounded-xl">
             <p className="text-blue-700">Using data from your profile</p>
           </div>
         )}
@@ -160,9 +171,9 @@ const Page = () => {
 
         {bmi && bodyComposition && (
           <div className="mt-12 animate-fadeIn">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Your Body Composition</h2>
-            <div className="bg-white/50 rounded-xl p-6 shadow-lg border border-gray-100">
-              <p className="text-xl text-gray-700 mb-6 text-center font-medium">
+            <h2 className="text-3xl font-bold  mb-6 text-center">Your Body Composition</h2>
+            <div className="rounded-xl p-6 shadow-lg border border-gray-100">
+              <p className="text-xl  mb-6 text-center font-medium">
                 BMI: <span className="text-purple-600 font-bold">{bmi}</span>
               </p>
               <div className="flex flex-col md:flex-row items-center gap-8">
@@ -201,7 +212,7 @@ const Page = () => {
                     }}
                   />
                 </div>
-                <div className="w-full md:w-1/2 space-y-4 text-base text-gray-700">
+                <div className="w-full md:w-1/2 space-y-4 text-base ">
                   <p className="flex items-center gap-2">
                     <span className="w-3 h-3 rounded-full bg-rose-500"></span>
                     Fat Mass: <span className="font-bold">{bodyComposition.fatMass} kg</span>
@@ -221,6 +232,9 @@ const Page = () => {
         )}
       </div>
     </div>
+    <Footer/>
+    </div>
+
   )
 }
 
